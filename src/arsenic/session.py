@@ -126,6 +126,14 @@ class Element(RequestHelpers):
             base64.b64decode(await self._request(url="/screenshot", method="GET"))
         )
 
+    async def get_element_by_xpath(self, selector: str) -> "Element":
+        element_id = await self._request(
+            url="/element",
+            method="POST",
+            data={"using": "xpath", "value": selector}, # not "XPath" nor "xpath selector"
+        )
+        return self.session.create_element(element_id)
+
 
 TCallback = Callable[..., Awaitable[Any]]
 TWaiter = Callable[[int, TCallback], Awaitable[Any]]
@@ -323,6 +331,18 @@ class Session(RequestHelpers):
             url="/window/new", method="POST", data={"type": window_type.value}
         )
 
+    async def get_element_by_xpath(self, selector: str) -> "Element":
+        element_id = await self._request(
+            url="/element",
+            method="POST",
+            data={"using": "xpath", "value": selector}, # not "XPath" nor "xpath selector"
+        )
+        return self.create_element(element_id) # not self.session.create_element()
+
+    async def wait_for_xpath(self, timeout: int, selector: str) -> Element:
+        return await self.wait(
+            timeout, partial(self.get_element_by_xpath, selector), NoSuchElement
+        )
 
 def _pointer_down(device, action):
     del action["duration"]
